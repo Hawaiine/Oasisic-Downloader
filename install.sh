@@ -119,7 +119,13 @@ echo ""
 # =============================================================================
 step "1 · 系统依赖"
 # =============================================================================
-for pkg in curl ffmpeg aria2; do pkg_install "$pkg"; done
+for pkg in curl ffmpeg aria2 python3 python3-pip; do pkg_install "$pkg"; done
+# mutagen: required by yt-dlp for metadata embedding (--embed-metadata, --embed-thumbnail)
+printf "      %-36s" "python3 mutagen..."
+python3 -c "import mutagen" 2>/dev/null && echo -e " ${G}✓ 已安装${N}" || {
+  pip3 install --quiet --break-system-packages mutagen 2>/dev/null     || pip3 install --quiet mutagen 2>/dev/null || true
+  python3 -c "import mutagen" 2>/dev/null     && echo -e " ${G}✓${N}"     || echo -e " ${Y}⚠ 安装失败（可手动运行: pip3 install mutagen）${N}"
+}
 
 # =============================================================================
 step "2 · Node.js (≥ 18)"
@@ -138,11 +144,59 @@ fi
 # =============================================================================
 step "3 · yt-dlp"
 # =============================================================================
-# yt-dlp 更新/安装：直接从 GitHub 下载最新版（不依赖 yt-dlp -U 权限问题）
-# yt-dlp -U 需要写入 /usr/local/bin，若非 root 则失败；用 curl 覆盖写入更可靠
 YTDLP_BEFORE="$( [ -x "$YTDLP_BIN" ] && "$YTDLP_BIN" --version 2>/dev/null || echo '未安装' )"
-run_q "下载 yt-dlp 最新版"   curl -fsSL "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" -o "$YTDLP_BIN"
-chmod +x "$YTDLP_BIN"
+
+# 安装/更新策略（三级降级，确保总能成功）：
+# 1. GitHub releases 直接下载（最新版，推荐）
+# 2. pip3 安装（GitHub 不可访问时的备选）
+# 3. apt 安装（版本可能较旧，但总是可用）
+YTDLP_OK=0
+
+printf "      %-36s" "方式1: GitHub 下载..."
+# /usr/local/bin 需要 root 写权限，统一用函数处理
+_ytdlp_curl() {
+  if [ "$(id -u)" -eq 0 ]; then
+    curl -fsSL --connect-timeout 15 --max-time 120 \
+      "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
+      -o "$YTDLP_BIN"
+  else
+    # 先下载到临时文件，再 sudo 移入目标位置
+    local _tmp; _tmp="$(mktemp)"
+    curl -fsSL --connect-timeout 15 --max-time 120 \
+      "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp" \
+      -o "$_tmp" && sudo mv "$_tmp" "$YTDLP_BIN" || { rm -f "$_tmp"; return 1; }
+  fi
+}
+if _ytdlp_curl 2>/dev/null && [ -s "$YTDLP_BIN" ]; then
+  [ "$(id -u)" -eq 0 ] && chmod +x "$YTDLP_BIN" || sudo chmod +x "$YTDLP_BIN"
+  "$YTDLP_BIN" --version &>/dev/null && YTDLP_OK=1
+fi
+[ "$YTDLP_OK" -eq 1 ] && echo -e " ${G}✓${N}" || echo -e " ${Y}跳过${N}"
+
+if [ "$YTDLP_OK" -eq 0 ]; then
+  printf "      %-36s" "方式2: pip3 安装..."
+  if command -v pip3 &>/dev/null || apt-get install -y python3-pip -qq &>/dev/null; then
+    pip3 install --quiet --break-system-packages yt-dlp 2>/dev/null       || pip3 install --quiet yt-dlp 2>/dev/null || true
+    YT_PIP="$(python3 -m yt_dlp --version 2>/dev/null | head -1 || true)"
+    if [ -n "$YT_PIP" ]; then
+      # Create wrapper so it's accessible as /usr/local/bin/yt-dlp
+      echo '#!/bin/sh' > "$YTDLP_BIN"
+      echo 'exec python3 -m yt_dlp "$@"' >> "$YTDLP_BIN"
+      chmod +x "$YTDLP_BIN"
+      "$YTDLP_BIN" --version &>/dev/null && YTDLP_OK=1
+    fi
+  fi
+  [ "$YTDLP_OK" -eq 1 ] && echo -e " ${G}✓${N}" || echo -e " ${Y}跳过${N}"
+fi
+
+if [ "$YTDLP_OK" -eq 0 ]; then
+  printf "      %-36s" "方式3: apt 安装..."
+  apt-get install -y yt-dlp -qq 2>/dev/null && YTDLP_OK=1 || true
+  [ "$YTDLP_OK" -eq 1 ] && echo -e " ${G}✓${N}" || echo -e " ${R}✗ 失败${N}"
+fi
+
+[ "$YTDLP_OK" -eq 0 ] && fail "yt-dlp 安装失败，请检查网络连接后重试"
+
 YTDLP_AFTER="$("$YTDLP_BIN" --version 2>/dev/null || echo '?')"
 [ "$YTDLP_BEFORE" = "$YTDLP_AFTER" ]   && ok "yt-dlp ${YTDLP_AFTER} 已是最新"   || ok "yt-dlp: ${YTDLP_BEFORE} → ${YTDLP_AFTER}"
 
