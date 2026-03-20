@@ -1,0 +1,22 @@
+# 依赖目录
+node_modules/
+client/node_modules/
+client/dist/
+
+# 运行时生成
+downloads/
+tmp/
+logs/
+
+# 敏感配置（含密码/密钥）
+server/.env
+server/cookies.txt
+
+
+# 系统文件
+.DS_Store
+*.log
+npm-debug.log*
+
+# PM2
+.pm2/
