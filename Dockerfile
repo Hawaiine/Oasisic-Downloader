@@ -24,7 +24,7 @@ WORKDIR /app
 FROM base AS frontend
 
 COPY client/package.json client/package-lock.json* ./client/
-RUN cd client && npm ci --no-audit --no-fund
+RUN cd client && npm install --no-audit --no-fund
 
 COPY client/ ./client/
 RUN cd client && npm run build && rm -rf node_modules
@@ -34,7 +34,7 @@ FROM base AS production
 
 # 后端依赖（独立层，利用 build cache）
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
+RUN npm install --omit=dev --ignore-scripts --no-audit --no-fund
 
 # 后端代码
 COPY server/ ./server/
