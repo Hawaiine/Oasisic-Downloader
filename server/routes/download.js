@@ -103,9 +103,12 @@ router.get('/:id/lyrics', async (req, res) => {
   if (!task) return res.status(404).json({ error:'任务不存在' });
   if (task.lyrics) return res.json({ success:true, data:task.lyrics });
   try {
+    const vi = task.videoInfo || {};
+    const searchTitle  = task.enriched?.title  || vi.track || vi.title || '';
+    const searchArtist = task.enriched?.artist || vi.artist || vi.uploader || '';
     const lyrics = await getLyrics({
-      title:  task.videoInfo?.track||task.videoInfo?.title||'',
-      artist: task.videoInfo?.artist||task.videoInfo?.uploader||'',
+      title:  searchTitle,
+      artist: searchArtist,
       source: 'auto',
     });
     res.json({ success:true, data:lyrics });

@@ -19,6 +19,7 @@ const CONFIG  = require('../config');
 const { downloadAudio, downloadVideo } = require('./ytdlp');
 const { fetchAndEmbedCover }           = require('./cover');
 const { getLyrics }                    = require('./lyrics');
+const { enrichMetadata }               = require('./enrichment');
 
 const tasks  = new Map();
 let running  = 0;
@@ -111,13 +112,29 @@ async function runTask(task) {
     if (task.type === 'audio') {
       outputPath = await downloadAudio(task.url, task.options.format||'flac', task.taskDir, onProgress, onProcStart);
 
+      // ── 元数据增强 ─────────────────────────────────────────────────
+      // 从多个音乐数据库补充/修正标题、艺术家、专辑、封面、年代、流派
+      emit(taskId, 'progress', { percent:100, speed:'-', eta:'-', status:'converting', log:'查询音乐数据库，获取准确元数据...' });
+      const vi = task.videoInfo || {};
+      const enriched = await enrichMetadata({
+        title:  vi.track  || vi.title  || '',
+        artist: vi.artist || vi.uploader || '',
+        album:  vi.album  || '',
+      });
+      if (enriched) {
+        task.enriched = enriched;
+        console.log(`[Queue] Enriched: "${enriched.title}" by ${enriched.artist} (${enriched.source})`);
+        emit(taskId, 'progress', { percent:100, speed:'-', eta:'-', status:'converting',
+          log:`元数据已增强: ${enriched.title} — ${enriched.artist} (${enriched.source})` });
+      }
+
       emit(taskId, 'progress', { percent:100, speed:'-', eta:'-', status:'converting', log:'处理封面图片...' });
       try {
         await fetchAndEmbedCover({
           audioPath: outputPath,
           taskDir:   task.taskDir,
           videoId:   task.videoInfo?.id,
-          thumbnail: task.videoInfo?.bestThumbnail || task.videoInfo?.thumbnail,
+          thumbnail: enriched?.cover || task.videoInfo?.bestThumbnail || task.videoInfo?.thumbnail,
         });
       } catch(e) { console.warn('[Queue] Cover embed failed:', e.message); }
 
@@ -149,7 +166,9 @@ async function runTask(task) {
     // Fetch lyrics in background (audio only)
     if (task.type === 'audio') {
       const vi = task.videoInfo || {};
-      getLyrics({ title:vi.track||vi.title||'', artist:vi.artist||vi.uploader||'', source:'auto' })
+      const searchTitle  = task.enriched?.title  || vi.track || vi.title || '';
+      const searchArtist = task.enriched?.artist || vi.artist || vi.uploader || '';
+      getLyrics({ title:searchTitle, artist:searchArtist, source:'auto' })
         .then(lyrics => { if(lyrics){ task.lyrics=lyrics; emit(taskId,'lyricsReady',{lyrics}); } })
         .catch(()=>{});
     }
@@ -186,6 +205,7 @@ function getPublicTask(task) {
     fileName:    task.outputFile ? path.basename(task.outputFile) : null,
     fileSize:    task.fileSize,
     lyrics:      task.lyrics,
+    enriched:    task.enriched || null,
     createdAt:   task.createdAt,
   };
 }

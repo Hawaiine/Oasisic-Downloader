@@ -1,4 +1,4 @@
-# 🧲 MediaMagnet
+# 🧲 Oasisic Downloader
 
 > YouTube 高品质音视频下载系统 · 自托管 · 无广告 · 无限制
 
@@ -41,8 +41,8 @@ apt install docker-compose-plugin
 
 ```bash
 # 克隆项目
-git clone https://github.com/Hawaiine/MediaMagnet.git
-cd MediaMagnet
+git clone https://github.com/Hawaiine/oasisic-downloader.git
+cd Oasisic-Downloader
 
 # 构建并启动
 docker compose up -d --build
@@ -73,12 +73,10 @@ docker compose up -d
 ### 更新到最新版本
 
 ```bash
-cd MediaMagnet
+cd Oasisic-Downloader
 git pull
 docker compose up -d --build
 ```
-
-> 💡 后续可以配置 Docker Hub 自动构建，Noah 直接 `docker pull` 即可。
 
 ---
 
@@ -86,8 +84,8 @@ docker compose up -d --build
 
 ```bash
 # 克隆
-git clone https://github.com/Hawaiine/MediaMagnet.git
-cd MediaMagnet
+git clone https://github.com/Hawaiine/oasisic-downloader.git
+cd Oasisic-Downloader
 
 # 一键安装（需要 root / sudo）
 sudo ./install.sh
@@ -112,11 +110,11 @@ node server/index.js
 传统部署后，任意位置运行：
 
 ```bash
-mediamagnet
+oasisic-downloader
 ```
 
 ```
-🧲 MediaMagnet  管理工具
+# 🧲 Oasisic Downloader  管理工具
 
 ── 日常操作 ──────────────────────────────────
  1) 🔄  更新 yt-dlp 到最新版
@@ -192,7 +190,7 @@ Deployment        Docker / PM2
 docker compose restart
 
 # 传统部署
-mediamagnet → 重启服务
+oasisic-downloader → 重启服务
 ```
 
 </details>
@@ -200,7 +198,7 @@ mediamagnet → 重启服务
 <details>
 <summary><b>❓ 下载速度很慢</b></summary>
 
-MediaMagnet 默认使用 aria2c 16 并发连接加速。如果网络环境限制了 YouTube，请尝试：
+Oasisic Downloader 默认使用 aria2c 16 并发连接加速。如果网络环境限制了 YouTube，请尝试：
 
 1. 确保服务器有良好的国际网络连接
 2. 配置代理环境变量
@@ -241,7 +239,7 @@ Docker 会缓存中间层，增量构建仅需 10-30 秒。如果经常更新，
 ## 🏗 项目结构
 
 ```
-MediaMagnet/
+Oasisic-Downloader/
 ├── server/                # Node.js 后端
 │   ├── index.js           # Express + Socket.IO 入口
 │   ├── config.js          # 配置加载 + 二进制路径检测
@@ -276,7 +274,7 @@ MediaMagnet/
 
 ```
 ┌─────────────────────────────────────┐
-│  🧲 MediaMagnet  YouTube 音视频下载器 │
+│  🧲 Oasisic Downloader  YouTube 音视频下载器 │
 │  ● 运行中    [🌙 深色模式 ▼]        │
 ├─────────────────────────────────────┤
 │  🔗 [https://youtube.com/...] [解析]│

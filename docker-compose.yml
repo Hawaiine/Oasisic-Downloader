@@ -1,34 +1,65 @@
-version: "3.8"
+version: "3.9"
+
+# =============================================================================
+# Oasisic Downloader — Docker Compose
+# =============================================================================
+# 启动: docker compose up -d
+# 停止: docker compose down
+# 日志: docker compose logs -f
+# 重构: docker compose up -d --build
+# =============================================================================
 
 services:
-  mediamagnet:
+  oasisic:
     build: .
-    container_name: mediamagnet
+    container_name: oasisic-downloader
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
+      # ── 服务端口 ──
       - PORT=3000
       - NODE_ENV=production
-      # Spotify (optional) — uncomment and fill in your credentials
+
+      # ── Spotify（可选）────────────────────────────────────────────────
+      # 用途: 辅助歌词搜索时匹配曲目
+      # 获取: https://developer.spotify.com/dashboard → Create App
       # - SPOTIFY_CLIENT_ID=your_client_id
       # - SPOTIFY_CLIENT_SECRET=your_client_secret
-      # Apple Music (optional) — requires paid Apple Developer account
+
+      # ── Apple Music（可选）────────────────────────────────────────────
+      # 需要 Apple Developer 账号 ($99/年)
+      # 获取: developer.apple.com → MusicKit Key
       # - APPLE_MUSIC_TOKEN=your_token
+
+      # ── Docker 容器额外配置 ──
+      # - TZ=Asia/Shanghai        # 时区
+      # - HTTP_PROXY=http://...   # 代理（可选）
+      # - HTTPS_PROXY=http://...  # 代理（可选）
+
     volumes:
-      # Persist downloads across container restarts
-      - ./downloads:/app/downloads
-      - ./tmp:/app/tmp
-      - ./logs:/app/logs
-      # Optional: mount browser cookies to bypass YouTube bot detection
-      # - ./cookies.txt:/app/server/cookies.txt:ro
-      # Optional: override .env config from host
-      # - ./.env:/app/server/.env:ro
+      # ── 数据持久化 ──
+      - ./downloads:/app/downloads   # 下载文件存储（未打包时保留）
+      - ./tmp:/app/tmp               # 临时工作目录
+      - ./logs:/app/logs             # 运行日志
+
+      # ── 可选挂载 ──
+      # - ./cookies.txt:/app/server/cookies.txt:ro   # 浏览器 Cookie（防机器人检测）
+      # - ./.env:/app/server/.env:ro                  # 自定义环境配置
+
     tmpfs:
-      - /tmp
+      - /tmp                        # /tmp 用内存，减少磁盘 I/O
+
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 15s
+
+    deploy:
+      resources:
+        limits:
+          memory: 512M               # 内存上限
+        reservations:
+          memory: 128M               # 保留内存

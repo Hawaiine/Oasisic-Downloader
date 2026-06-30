@@ -134,16 +134,30 @@ async function fetchAppleMusic({ title, artist }) {
     const lyrText = lyrData?.data?.[0]?.attributes?.ttml;
     if (!lyrText) return null;
 
-    return { source:'applemusic', lrc:null, plain:lyrText, translation:null };
+    const lrc = convertTtmlToLrc(lyrText) || null;
+    return { source:'applemusic', lrc, plain: lrc ? null : lyrText, translation:null };
   } catch (e) {
     console.warn(`[lyrics/applemusic] ${e.message}`);
     return null;
   }
 }
 
+function convertTtmlToLrc(ttml) {
+  if (typeof ttml !== 'string') return null;
+  const matches = [...ttml.matchAll(/<p[^>]*\bbegin="([^"]+)"[^>]*>([\s\S]*?)<\/p>/gi)];
+  if (!matches.length) return null;
+
+  return matches.map((m) => {
+    const time = m[1].trim();
+    const text = m[2].replace(/<\s*br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim();
+    const mmss = time.slice(3, 8).replace(/^0/, '');
+    return `[${mmss}]${text}`;
+  }).join('\n');
+}
+
 // ── Source 4: Spotify (requires CLIENT_ID + SECRET) ──────────────────────────
-// NOTE: Spotify does NOT provide lyrics via public API.
-// This returns track match info only — useful to confirm the right song.
+// Spotify does not expose lyrics directly. Use it as a track identifier to improve
+// lyrics matching by cross-searching LRCLib with the matched track info.
 async function fetchSpotify({ title, artist }) {
   if (!CONFIG.SPOTIFY_CLIENT_ID || !CONFIG.SPOTIFY_CLIENT_SECRET) return null;
 
@@ -152,7 +166,7 @@ async function fetchSpotify({ title, artist }) {
     const tokResp = await httpPost(
       'https://accounts.spotify.com/api/token',
       'grant_type=client_credentials',
-      { Authorization:`Basic ${creds}`, 'Content-Type':'application/x-www-form-urlencoded' }
+      { Authorization: `Bearer ${creds}`, 'Content-Type':'application/x-www-form-urlencoded' }
     );
     const token = JSON.parse(tokResp.body).access_token;
     if (!token) return null;
@@ -160,21 +174,73 @@ async function fetchSpotify({ title, artist }) {
     const q      = encodeURIComponent(`track:${title} artist:${artist}`);
     const search = await httpGet(
       `https://api.spotify.com/v1/search?q=${q}&type=track&limit=1`,
-      { headers: { Authorization:`Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     const item = JSON.parse(search.body)?.tracks?.items?.[0];
     if (!item) return null;
 
+    const spotArtist = item.artists.map(a => a.name).join(', ');
+    const lrcResult  = await fetchLRCLib({ title: item.name, artist: spotArtist });
+    if (lrcResult) {
+      lrcResult.source = 'spotify';
+      return lrcResult;
+    }
+
     return {
       source: 'spotify',
       lrc:    null,
-      plain:  `[Spotify] ${item.name} — ${item.artists.map(a=>a.name).join(', ')}\n${item.album.name} (${(item.album.release_date||'').slice(0,4)})\n\n注意：Spotify 公开 API 不提供歌词，仅显示曲目匹配信息。`,
+      plain:  `[Spotify] ${item.name} — ${item.artists.map(a=>a.name).join(', ')}\\n${item.album.name} (${(item.album.release_date||'').slice(0,4)})\\n\\n注意：Spotify 公开 API 不提供歌词，仅显示曲目匹配信息。`,
       translation: null,
     };
   } catch (e) {
     console.warn(`[lyrics/spotify] ${e.message}`);
     return null;
   }
+}
+
+// ── Source 5: QQ Music ────────────────────────────────────────────────────────
+// Chinese lyrics source using QQ Music public API.
+async function fetchQQMusic({ title, artist }) {
+  try {
+    const query  = encodeURIComponent(`${artist} ${title}`);
+    const search = await httpGet(
+      `https://c.y.qq.com/soso/fcgi-bin/client_search_cp?w=${query}&t=0&format=json&p=1&n=5`,
+      { headers: { Referer: 'https://y.qq.com' } }
+    );
+    const data   = JSON.parse(search.body);
+    const list   = data?.data?.song?.list;
+    if (!Array.isArray(list) || !list.length) return null;
+
+    const song = list[0];
+    const mid  = song.songmid;
+    if (!mid) return null;
+
+    const lyrResp = await httpGet(
+      `https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=${mid}&g_tk=5381&format=json`,
+      { headers: { Referer: 'https://y.qq.com' } }
+    );
+    const lyrData = JSON.parse(lyrResp.body);
+    const lyric   = lyrData?.data?.lyric || lyrData?.lyric || null;
+    if (!lyric) return null;
+
+    const lrc = parseQQMusicLyric(lyric) || null;
+    return { source:'qqmusic', lrc, plain: lrc ? null : lyric, translation:null };
+  } catch (e) {
+    console.warn(`[lyrics/qqmusic] ${e.message}`);
+    return null;
+  }
+}
+
+function parseQQMusicLyric(raw) {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.replace(/^\uFEFF/, '').trim();
+  if (!trimmed) return null;
+
+  if (/\[/.test(trimmed) && /\[\d{2}:\d{2}(?:\.\d{2,3})?\]/.test(trimmed)) {
+    return trimmed;
+  }
+
+  return trimmed.split(/\r?\n/).map(line => `[00:00.00]${line.trim()}`).filter(Boolean).join('\n');
 }
 
 // ── Priority chain ────────────────────────────────────────────────────────────

@@ -424,7 +424,7 @@ export default function App() {
         <LogoIcon size={30}/>
         <div>
           <p style={{ fontWeight:700, fontSize:14.5, letterSpacing:'-0.3px', lineHeight:1.2, color:'var(--t1)' }}>
-            MediaMagnet
+            Oasisic Downloader
           </p>
           <p style={{ fontSize:11, color:'var(--t3)', marginTop:1 }}>YouTube 音视频下载器</p>
         </div>
