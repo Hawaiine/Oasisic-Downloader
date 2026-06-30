@@ -372,15 +372,55 @@ show_menu() {
   echo "   8) 📦  检查并更新系统依赖 (ffmpeg/aria2/Node.js)"
   echo "   9) 🗑   一键卸载本项目"
   echo ""
+  echo -e "  ${B}── Docker 相关 ───────────────────────────────${N}"
+  echo "   10) 🐳 Docker 完整更新 (git pull + 重建镜像)"
+  echo ""
   echo "   0)     退出"
   echo ""
-  read -r -p "  请选择 [0-9]: " CHOICE
+  read -r -p "  请选择 [0-9/10]: " CHOICE
   case "$CHOICE" in
     1) do_update    ;; 2) do_port      ;; 3) do_spotify ;;
     4) do_restart   ;; 5) do_status    ;; 6) do_logs    ;;
     7) do_rebuild   ;; 8) do_sysupdate ;; 9) do_uninstall ;;
+    10) do_docker_update ;;
     0) exit 0       ;; *) show_menu    ;;
   esac
+}
+
+do_docker_update() {
+  echo ""
+  info "正在执行 Docker 完整更新..."
+  info "步骤1: git pull 拉取最新代码..."
+  if ! git -C "$INSTALL_DIR" pull 2>/dev/null; then
+    err "git pull 失败，请检查网络连接"
+    echo ""; read -r -p "  回车返回菜单…" _; show_menu; return
+  fi
+  ok "代码已更新到最新版本"
+
+  if command -v docker &>/dev/null; then
+    info "步骤2: 重建 Docker 镜像..."
+    if docker compose -f "$INSTALL_DIR/docker-compose.yml" up -d --build 2>/dev/null; then
+      ok "Docker 镜像重建并重启完成"
+    elif docker-compose -f "$INSTALL_DIR/docker-compose.yml" up -d --build 2>/dev/null; then
+      ok "Docker 镜像重建并重启完成"
+    elif command -v docker &>/dev/null; then
+      info "检测到 Docker 但未找到 docker-compose.yml，尝试直接构建..."
+      docker build -t oasisic-downloader "$INSTALL_DIR" 2>/dev/null && \
+        ok "Docker 镜像构建完成" || \
+        warn "Docker 构建失败，请手动运行: cd $INSTALL_DIR && docker compose up -d --build"
+    fi
+  else
+    info "步骤2: 更新 npm 依赖并重建前端..."
+    cd "$INSTALL_DIR" && npm install --production 2>/dev/null
+    cd "$INSTALL_DIR/client" && npm install 2>/dev/null && npm run build 2>/dev/null && cd "$INSTALL_DIR"
+    pm2_restart
+    ok "依赖更新 + 前端构建完成，服务已重启"
+  fi
+
+  info "步骤3: 更新 yt-dlp..."
+  "$YTDLP_BIN" -U 2>/dev/null && ok "yt-dlp 已更新" || warn "yt-dlp 更新跳过"
+
+  echo ""; read -r -p "  回车返回菜单…" _; show_menu
 }
 
 do_update() {
