@@ -2,7 +2,7 @@
 
 > YouTube 高品质音视频下载系统 · 自托管 · 无广告 · 无限制
 
-[![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com)
+[![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/barryallen26/oasisic-downloader)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -26,33 +26,31 @@
 
 ---
 
-## 🐳 快速开始（Docker 推荐）
+## 🐳 Docker 部署
 
-### 前置要求
+### 方式 A：从 Docker Hub 拉取（推荐，免构建）
 
 ```bash
-# 安装 Docker
-curl -fsSL https://get.docker.com | sh
+# 首次部署
+mkdir ~/oasisic && cd ~/oasisic
+wget https://raw.githubusercontent.com/Hawaiine/oasisic-downloader/main/docker-compose.pull.yml
+docker compose -f docker-compose.pull.yml up -d
 
-# 安装 Docker Compose（如未自带）
-apt install docker-compose-plugin
+# 查看状态
+docker compose -f docker-compose.pull.yml logs -f
 ```
 
-### 一键启动
+### 方式 B：本地构建
 
 ```bash
-# 克隆项目
 git clone https://github.com/Hawaiine/oasisic-downloader.git
 cd Oasisic-Downloader
-
-# 构建并启动
 docker compose up -d --build
-
-# 查看运行状态
-docker compose logs -f
 ```
 
 访问 **`http://你的IP:3000`** 🎉
+
+> 📖 完整 Docker 指南：[DOCKER.md](DOCKER.md) — 镜像说明、配置、代理、cookies、FAQ
 
 ### 可选配置
 
@@ -168,6 +166,42 @@ Backend           Express 4 + Socket.IO 4
 Download Engine   yt-dlp + aria2c + ffmpeg
 Image Processing  sharp (封面裁剪)
 Deployment        Docker / PM2
+```
+
+---
+
+## 📂 项目结构
+
+```
+Oasisic-Downloader/
+├── server/                  # Node.js 后端
+│   ├── index.js             # Express + Socket.IO 入口
+│   ├── config.js            # 配置加载 + 二进制路径检测
+│   ├── routes/              # API 路由
+│   │   ├── info.js          # GET  /api/info
+│   │   ├── download.js      # POST /api/download
+│   │   ├── lyrics.js        # GET  /api/lyrics
+│   │   └── batch.js         # POST /api/batch
+│   └── services/            # 业务逻辑
+│       ├── ytdlp.js         # yt-dlp 下载引擎
+│       ├── queue.js         # 任务队列
+│       ├── cover.js         # 封面处理
+│       ├── lyrics.js        # 歌词搜索引擎（5个源头）
+│       ├── enrichment.js    # 元数据增强
+│       └── zhConvert.js     # 繁→简中文
+├── client/                  # React 前端 (Vite)
+│   └── src/
+│       ├── App.jsx          # 主应用
+│       ├── components/      # UI 组件 (7个)
+│       └── hooks/           # 自定义 hooks
+├── scripts/
+│   └── oasisic.sh           # 管理命令模板
+├── install.sh               # 安装脚本
+├── Dockerfile               # Docker 构建
+├── docker-compose.yml       # Docker 编排（本地构建）
+├── docker-compose.pull.yml  # Docker 编排（Hub 拉取）
+├── DOCKER.md                # Docker 部署指南
+└── .github/workflows/       # CI/CD 自动构建
 ```
 
 ---
