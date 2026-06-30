@@ -15,11 +15,6 @@ name: 🐳 Build & Push to Docker Hub
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "README.md"
-      - ".gitignore"
-      - "install.sh"
-      - "ecosystem.config.js"
 
 jobs:
   docker:
