@@ -1,236 +1,311 @@
-# 🎵 Oasisic Downloader
+# 🧲 MediaMagnet
 
 > YouTube 高品质音视频下载系统 · 自托管 · 无广告 · 无限制
 
-单曲 / 播放列表批量下载，自动写入元数据与封面，内置多源歌词搜索，实时进度推送，支持随时取消。
+[![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 ---
 
-## ✨ 功能特性
+## ✨ 预览
 
-| 功能 | 说明 |
+| 界面 | 说明 |
 |------|------|
+| 🏠 **主界面** | 输入 YouTube 链接 → 自动解析视频/播放列表信息 |
 | 🎵 **音频下载** | FLAC · ALAC · M4A · MP3 · WAV · AAC · Opus 七种格式 |
-| 🎬 **视频下载** | 4K / 2K / 1080p / 720p，MP4 / MKV |
+| 🎬 **视频下载** | 4K / 2K / 1080p / 720p，MP4 / MKV 封装 |
 | 📋 **播放列表** | 勾选下载，实时进度 + 日志，每首完成后独立保存 |
-| ❌ **取消下载** | 任意时刻取消，立即终止 yt-dlp 进程 |
-| 🖼 **封面预览** | React Portal 全屏浮层，最高清 maxresdefault，可保存 |
-| 🏷 **元数据** | 标题 / 艺术家 / 专辑 / 年份，繁→简中文自动转换 |
-| 🎤 **歌词搜索** | 网易云 → LRCLib → Apple Music → Spotify 多源依次 |
-| 🎧 **播放器队列** | 下载后自动入队，上/下曲，双击跳转，自动续播 |
-| ⚡ **实时进度** | WebSocket 推送速度 / ETA / 百分比 |
+| 🖼 **封面预览** | 全屏弹窗查看最高清封面，一键下载保存 |
+| 🏷 **元数据** | 自动写入标题/艺术家/专辑/年份，繁→简中文转换 |
+| 🎤 **歌词搜索** | 网易云 → LRCLib → Apple Music → Spotify 多源依次搜索 |
+| 🎧 **播放器** | 下载后自动入队，上/下曲，自动续播，音量控制 |
+| ⚡ **实时进度** | WebSocket 推送速度 / ETA / 百分比 / 日志 |
 | 🌙 **主题切换** | 深色 / 浅色 / 跟随系统 |
 
 ---
 
-## 📦 系统要求
+## 🐳 快速开始（Docker 推荐）
 
-- Debian 12/13 或 Ubuntu 22.04/24.04（其他 apt 系发行版大概率兼容）
-- 至少 512 MB RAM，1 GB 磁盘空间
-- 以 root 或具有 sudo 权限的用户运行
+### 前置要求
+
+```bash
+# 安装 Docker
+curl -fsSL https://get.docker.com | sh
+
+# 安装 Docker Compose（如未自带）
+apt install docker-compose-plugin
+```
+
+### 一键启动
+
+```bash
+# 克隆项目
+git clone https://github.com/Hawaiine/MediaMagnet.git
+cd MediaMagnet
+
+# 构建并启动
+docker compose up -d --build
+
+# 查看运行状态
+docker compose logs -f
+```
+
+访问 **`http://你的IP:3000`** 🎉
+
+### 可选配置
+
+```bash
+# 停止服务后编辑
+docker compose stop
+
+# 添加 Spotify 凭证（歌词搜索辅助）
+# 编辑 docker-compose.yml，取消注释 SPOTIFY_CLIENT_ID 和 SPOTIFY_CLIENT_SECRET
+
+# 添加浏览器 Cookie（解决 YouTube 机器人检测）
+# 浏览器安装 "Get cookies.txt" 扩展 → 导出 youtube.com 的 cookies
+# 将 cookies.txt 放到项目目录，取消注释 docker-compose.yml 中的 volume
+
+# 启动
+docker compose up -d
+```
+
+### 更新到最新版本
+
+```bash
+cd MediaMagnet
+git pull
+docker compose up -d --build
+```
+
+> 💡 后续可以配置 Docker Hub 自动构建，Noah 直接 `docker pull` 即可。
 
 ---
 
-## 🚀 快速部署
+## 🚀 传统部署（Debian / Ubuntu）
 
 ```bash
-# 解压
-tar -xzf oasisic-downloader.tar.gz
-cd oasisic-downloader
+# 克隆
+git clone https://github.com/Hawaiine/MediaMagnet.git
+cd MediaMagnet
 
-# 一键安装（约 2-5 分钟）
+# 一键安装（需要 root / sudo）
 sudo ./install.sh
+
+# 或手动：
+npm install --production
+cd client && npm install && npm run build && cd ..
+node server/index.js
 ```
 
 安装过程会询问：
-- **服务端口**（默认 3000，直接回车使用）
-- **Spotify API 凭证**（可选，直接回车跳过）
 
-安装完成后访问：`http://服务器IP:端口`
+1. **服务端口**（默认 3000）
+2. **Spotify API 凭证**（可选，用于歌词匹配辅助）
+
+安装完成后访问 `http://服务器IP:端口`
 
 ---
 
-## 🛠 oasisic 管理命令
+## 🛠 管理命令
 
-安装完成后，任意位置运行：
+传统部署后，任意位置运行：
 
 ```bash
-oasisic
+mediamagnet
 ```
 
 ```
-Oasisic Downloader  管理工具
+🧲 MediaMagnet  管理工具
 
- 1)  更新 yt-dlp
- 2)  修改端口号
- 3)  配置 Spotify API
- 4)  重启服务
- 5)  查看服务状态
- 6)  查看实时日志
- 7)  重新构建前端
- 8)  检查/更新系统依赖 (ffmpeg / aria2 / Node.js / PM2)
- 9)  一键卸载本项目
- 0)  退出
+── 日常操作 ──────────────────────────────────
+ 1) 🔄  更新 yt-dlp 到最新版
+ 2) 🔌  修改端口号
+ 3) 🎵  配置 Spotify API
+ 4) ↺   重启服务
+ 5) 📊  查看服务状态
+ 6) 📋  查看实时日志
+
+── 维护 ──────────────────────────────────────
+ 7) 🔨  重新构建前端
+ 8) 📦  检查/更新系统依赖
+ 9) 🗑   一键卸载
+```
+
+Docker 部署则使用：
+
+```bash
+docker compose logs -f      # 查看日志
+docker compose restart       # 重启
+docker compose down          # 停止
 ```
 
 ---
 
 ## ⚙️ 配置文件
 
-安装后配置文件位于 `server/.env`：
+| 文件 | 说明 |
+|------|------|
+| `server/.env` | 端口、Spotify/Apple Music 凭证 |
+| `server/cookies.txt` | 浏览器导出的 YouTube Cookie（可选） |
+| `docker-compose.yml` | Docker 环境变量和卷挂载 |
 
 ```env
+# server/.env
 PORT=3000
 NODE_ENV=production
-
-# Spotify API（可选，辅助歌词搜索）
-# 获取：https://developer.spotify.com/dashboard → Create App（免费）
 SPOTIFY_CLIENT_ID=
 SPOTIFY_CLIENT_SECRET=
-
-# Apple Music API（可选，需 Apple Developer 账号，年费约 $99）
-# APPLE_MUSIC_TOKEN=
+APPLE_MUSIC_TOKEN=
 ```
-
-修改后运行 `oasisic → 4) 重启服务` 使配置生效。
 
 ---
 
-## 🤖 解决 YouTube Bot 检测
+## 🧩 技术栈
 
-下载时若出现 `Sign in to confirm you're not a bot` 错误：
+```
+Frontend          React 18 + Vite 5 + Socket.IO Client
+Backend           Express 4 + Socket.IO 4
+Download Engine   yt-dlp + aria2c + ffmpeg
+Image Processing  sharp (封面裁剪)
+Deployment        Docker / PM2
+```
 
-**方法一（推荐）— yt-dlp 直接从浏览器导出：**
+---
+
+## 🔍 常见问题
+
+<details>
+<summary><b>❓ 下载失败 "YouTube 要求验证身份"</b></summary>
+
+**原因**：YouTube 检测到自动化请求。
+
+**解决**：
+
+1. 在浏览器安装 "Get cookies.txt" 扩展
+2. 登录 youtube.com，导出 cookies
+3. 将 `cookies.txt` 放到项目 `server/` 目录
+4. 重启服务
+
 ```bash
-# 在已登录 YouTube 的本地机器上执行
-yt-dlp --cookies-from-browser chrome -o /dev/null https://www.youtube.com
-# 上传到服务器
-scp cookies.txt user@server:/安装目录/server/cookies.txt
+# Docker
+docker compose restart
+
+# 传统部署
+mediamagnet → 重启服务
 ```
 
-**方法二 — Chrome 扩展手动导出：**
-1. 安装 [Get cookies.txt LOCALLY](https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) 扩展
-2. 登录 YouTube，点击扩展图标导出 cookies.txt
-3. 上传到服务器 `server/cookies.txt`
+</details>
 
-Cookie 文件放置后自动生效，无需重启服务。
+<details>
+<summary><b>❓ 下载速度很慢</b></summary>
 
----
+MediaMagnet 默认使用 aria2c 16 并发连接加速。如果网络环境限制了 YouTube，请尝试：
 
-## 🎵 配置 Spotify API（可选）
+1. 确保服务器有良好的国际网络连接
+2. 配置代理环境变量
 
-用于歌词搜索时辅助确认曲目信息（**注意：Spotify 公开 API 不提供歌词正文**）：
+```bash
+# Docker 中添加：
+environment:
+  - HTTP_PROXY=http://你的代理:端口
+  - HTTPS_PROXY=http://你的代理:端口
+```
 
-1. 访问 [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard)
-2. 登录后点击 **Create App**，Redirect URI 填 `http://localhost`
-3. 在设置页获取 **Client ID** 和 **Client Secret**
-4. 运行 `oasisic → 3) 配置 Spotify API` 填入
+</details>
 
----
+<details>
+<summary><b>❓ 播放列表解析失败</b></summary>
 
-## 🔧 技术栈
+- 私有/未公开播放列表需要 `cookies.txt`
+- 大型播放列表（200+ 首）需要更长的加载时间
+- 某些地区受限制的曲目会被自动跳过（`--ignore-errors`）
 
-**后端**
+</details>
 
-| 组件 | 版本 | 作用 |
-|------|------|------|
-| Node.js | 18+ | 运行时 |
-| Express | 4.x | HTTP API |
-| Socket.IO | 4.x | WebSocket 实时进度 |
-| yt-dlp | latest | 下载核心 |
-| FFmpeg | 系统 | 音视频转码、封面嵌入 |
-| aria2c | 系统 | 16 线程分片下载加速 |
-| sharp | 0.33+ | 封面图裁剪 1000×1000 |
-| PM2 | 6.x | 进程管理、开机自启 |
+<details>
+<summary><b>❓ Docker 构建太慢</b></summary>
 
-**前端**
+首次构建约 3-5 分钟。后续更新只需要：
 
-| 组件 | 版本 | 作用 |
-|------|------|------|
-| React | 18 | UI 框架 |
-| Vite | 5.x | 构建工具 |
-| Socket.IO Client | 4.x | 实时进度接收 |
-| lucide-react | 0.4x | 图标库 |
+```bash
+docker compose up -d --build
+```
+
+Docker 会缓存中间层，增量构建仅需 10-30 秒。如果经常更新，可以配置 GitHub Actions 自动构建并推送到 Docker Hub。
+
+</details>
 
 ---
 
-## 📁 项目结构
+## 🏗 项目结构
 
 ```
-oasisic-downloader/
-├── install.sh                    # 一键安装脚本（含 oasisic 管理命令生成）
-├── ecosystem.config.js           # PM2 配置（自读 .env 注入 PORT）
-├── package.json                  # 后端依赖
-├── server/
-│   ├── index.js                  # Express + Socket.IO 入口
-│   ├── config.js                 # 先 dotenv.config() 再读 PORT
-│   ├── .env                      # 安装后生成（含 PORT/Spotify 凭证）
-│   ├── cookies.txt               # YouTube Cookie（可选，手动放置）
+MediaMagnet/
+├── server/                # Node.js 后端
+│   ├── index.js           # Express + Socket.IO 入口
+│   ├── config.js          # 配置加载 + 二进制路径检测
 │   ├── routes/
-│   │   ├── info.js               # GET /api/info — 视频/播放列表信息
-│   │   ├── download.js           # POST /api/download; DELETE /:id 取消; GET /:id/file 流式下载
-│   │   └── lyrics.js             # GET /api/lyrics — 多源歌词
+│   │   ├── info.js        # GET /api/info — 视频/播放列表信息
+│   │   ├── download.js    # POST /api/download + 文件流下载
+│   │   ├── lyrics.js      # GET /api/lyrics — 多源歌词搜索
+│   │   └── batch.js       # POST /api/batch — 打包下载
 │   └── services/
-│       ├── ytdlp.js              # yt-dlp 封装（-J 解析列表，onProcStart 取消支持）
-│       ├── queue.js              # 任务队列（task.proc 字段，cancelTask 终止进程）
-│       ├── cover.js              # 封面获取（maxresdefault）+ sharp 裁剪
-│       ├── metadata.js           # FFmpeg 元数据写入
-│       ├── lyrics.js             # 多源歌词（网易云/LRCLib/Apple/Spotify）
-│       └── zhConvert.js          # 繁→简（2700+ 字映射，含傑→杰、場→场）
-└── client/
-    ├── vite.config.js
-    ├── index.html
-    └── src/
-        ├── App.jsx               # 根组件（播放队列、playlistTaskIds 隔离）
-        ├── api.js                # axios 封装
-        ├── index.css             # CSS 变量主题系统
-        ├── hooks/useTheme.js     # 三态主题（dark/light/auto）
-        └── components/
-            ├── URLInput.jsx      # URL 输入（onPaste 自动解析）
-            ├── VideoInfo.jsx     # 封面全屏 Portal lightbox
-            ├── DownloadOptions.jsx
-            ├── ProgressPanel.jsx # 实时进度 + 取消按钮 + 折叠日志
-            ├── LyricsPanel.jsx   # 多源歌词（LRC 时间轴 + 翻译）
-            ├── PersistentPlayer.jsx # 播放器队列（双击跳转，自动续播）
-            └── PlaylistPanel.jsx # 播放列表（稳定 Socket + onTaskCreated 即时回调）
+│       ├── ytdlp.js       # yt-dlp 封装（下载/解析/反检测）
+│       ├── queue.js       # 任务队列管理
+│       ├── cover.js       # 封面抓取 + 裁剪 + 嵌入
+│       ├── lyrics.js      # 歌词搜索引擎
+│       └── zhConvert.js   # 繁→简中文转换
+├── client/                # React 前端
+│   └── src/
+│       ├── App.jsx        # 主应用
+│       ├── api.js         # API 请求封装
+│       ├── components/    # UI 组件
+│       └── hooks/         # 自定义 hooks
+├── Dockerfile             # Docker 构建
+├── docker-compose.yml     # Docker 编排
+├── install.sh             # 一键安装脚本
+└── ecosystem.config.js    # PM2 配置
 ```
 
 ---
 
-## 🐛 常见问题
+## 📸 Screenshots
 
-**Q: 修改端口后旧端口仍可访问？**
+（可在此处加入截图）
 
-旧版用 `fuser` 释放端口，但 `fuser` 在 Debian 最小安装中不存在。新版改用 `/proc/net/tcp` 直读内核 TCP 表 + `ss` + `pkill` 三重保险，兼容所有 Linux 环境。
+```
+┌─────────────────────────────────────┐
+│  🧲 MediaMagnet  YouTube 音视频下载器 │
+│  ● 运行中    [🌙 深色模式 ▼]        │
+├─────────────────────────────────────┤
+│  🔗 [https://youtube.com/...] [解析]│
+│                                     │
+│  ┌─ 视频信息 ────────────────────┐  │
+│  │ 🖼  视频标题                  │  │
+│  │ 👤  Updloader  ⏱ 3:45        │  │
+│  └───────────────────────────────┘  │
+│                                     │
+│  ┌─ 下载选项 ────────────────────┐  │
+│  │ [🎵音频] [🎬视频]             │  │
+│  │ FLAC ALAC M4A MP3 WAV AAC     │  │
+│  └───────────────────────────────┘  │
+│                                     │
+│  [▶ 开始下载]                       │
+└─────────────────────────────────────┘
+```
 
-**Q: 安装时 vite build 失败？**
+---
 
-失败时会显示具体错误信息。常见原因：Node.js 版本过低（需 ≥ 18），运行 `oasisic → 8) 检查/更新系统依赖` 升级后重试。
+## 🤝 致谢
 
-**Q: 播放列表进度显示 0%？**
-
-Socket 监听器重复注册导致事件丢失（已修复：useEffect 空依赖数组 + useRef）。
-
-**Q: 出现 "Sign in to confirm you're not a bot"？**
-
-按上方 Cookie 章节配置 `server/cookies.txt`，配置后自动生效。
-
-**Q: 繁体字文件名没有转换为简体？**
-
-`zhConvert.js` 内嵌 2700+ 字映射。如遇未覆盖的字，可在 `T2S_MAP` 手动添加。
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — 强大的下载引擎
+- [LRCLib](https://lrclib.net) — 开源歌词库
+- [网易云音乐](https://music.163.com) — 中文歌词来源
+- [Lucide Icons](https://lucide.dev) — 清爽的图标
 
 ---
 
 ## 📄 License
 
-MIT License — 自由使用、修改、分发，保留原始声明即可。
-
----
-
-## 🙏 致谢
-
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — 核心下载引擎
-- [FFmpeg](https://ffmpeg.org) — 音视频处理
-- [aria2](https://aria2.github.io) — 多线程下载加速
-- [网易云音乐 API](https://music.163.com) — 中文歌词数据
-- [LRCLib](https://lrclib.net) — 开源歌词库
+MIT

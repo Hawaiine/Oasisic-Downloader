@@ -43,6 +43,7 @@ app.use('/api/info',     require('./routes/info'));
 app.use('/api/download', require('./routes/download'));
 app.use('/api/lyrics',   require('./routes/lyrics'));
 app.use('/api/tasks',    require('./routes/download')); // list alias
+app.use('/api/batch',    require('./routes/batch'));
 
 app.get('/api/health', (_, res) => res.json({ status:'ok', port:CONFIG.PORT, uptime:process.uptime() }));
 

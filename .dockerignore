@@ -1,0 +1,17 @@
+.git
+.gitignore
+node_modules
+client/node_modules
+client/dist
+downloads
+tmp
+logs
+server/.env
+server/cookies.txt
+README.md
+install.sh
+ecosystem.config.js
+*.tar.gz
+*.tar
+.DS_Store
+*.log

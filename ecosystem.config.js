@@ -27,7 +27,7 @@ const envVars = readEnvFile();
 
 module.exports = {
   apps: [{
-    name:   'oasisic-downloader',
+    name:   'mediamagnet',
     script: './server/index.js',
     cwd:    __dirname,
     env: {

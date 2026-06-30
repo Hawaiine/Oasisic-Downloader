@@ -9,12 +9,15 @@
 const { Router } = require('express');
 const path = require('path');
 const fs   = require('fs');
-const { createTask, getTask, getPublicTask, cancelTask, getQueueStatus } = require('../services/queue');
+const { createTask, getTask, getPublicTask, cancelTask, getQueueStatus, listTasks } = require('../services/queue');
 const { getVideoInfo } = require('../services/ytdlp');
 const { getCoverForDownload } = require('../services/cover');
 const { getLyrics }           = require('../services/lyrics');
 const CONFIG = require('../config');
 const router = Router();
+
+// ── GET /api/download (list all tasks) ────────────────────────────────────────
+router.get('/', (req, res) => res.json({ success:true, data:listTasks() }));
 
 // ── POST /api/download ────────────────────────────────────────────────────────
 router.post('/', async (req, res) => {

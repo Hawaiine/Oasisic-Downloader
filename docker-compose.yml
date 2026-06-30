@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  mediamagnet:
+    build: .
+    container_name: mediamagnet
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      # Spotify (optional) — uncomment and fill in your credentials
+      # - SPOTIFY_CLIENT_ID=your_client_id
+      # - SPOTIFY_CLIENT_SECRET=your_client_secret
+      # Apple Music (optional) — requires paid Apple Developer account
+      # - APPLE_MUSIC_TOKEN=your_token
+    volumes:
+      # Persist downloads across container restarts
+      - ./downloads:/app/downloads
+      - ./tmp:/app/tmp
+      - ./logs:/app/logs
+      # Optional: mount browser cookies to bypass YouTube bot detection
+      # - ./cookies.txt:/app/server/cookies.txt:ro
+      # Optional: override .env config from host
+      # - ./.env:/app/server/.env:ro
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

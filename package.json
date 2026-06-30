@@ -1,7 +1,7 @@
 {
-  "name": "oasisic-downloader-server",
-  "version": "1.0.0",
-  "description": "Oasisic Downloader — Node.js/Express backend",
+  "name": "mediamagnet",
+  "version": "2.0.0",
+  "description": "MediaMagnet — YouTube 高品质音视频下载系统 (Node.js/Express backend)",
   "main": "server/index.js",
   "engines": {
     "node": ">=18.0.0"
